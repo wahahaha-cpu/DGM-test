@@ -27,7 +27,8 @@ class SCALEFilter:
     `action_score` uses the same callback and should return per-particle event
     probabilities for a candidate action.
     """
-    def __init__(self, z0: Array, config: SCALEConfig, seed: int = 0):
+    def __init__(self, z0: Array, config: SCALEConfig, seed: int = 0,
+                 basis: Optional[Array] = None):
         z0 = np.asarray(z0, dtype=np.float64)
         if z0.shape != (config.latent_dim,):
             raise ValueError(f"z0 must have shape ({config.latent_dim},)")
@@ -36,6 +37,14 @@ class SCALEFilter:
         self.cfg = config
         self.rng = np.random.default_rng(seed)
         self.z0 = z0.copy()
+        if basis is None:
+            self.basis = np.eye(config.latent_dim, dtype=np.float64)
+        else:
+            basis = np.asarray(basis, dtype=np.float64)
+            if basis.ndim != 2 or basis.shape[0] != config.latent_dim:
+                raise ValueError("basis must have shape [latent_dim, rank]")
+            # QR makes the probe directions orthonormal without learning.
+            self.basis, _ = np.linalg.qr(basis)
         self.radius = float(config.radius)
         self.particles = self._make_particles(z0, self.radius)
         self.weights = np.full(config.n_particles, 1.0 / config.n_particles)
@@ -48,7 +57,7 @@ class SCALEFilter:
         particle budget permits; remaining directions are deterministic random
         unit vectors generated from the local seed.
         """
-        n, d = self.cfg.n_particles, self.cfg.latent_dim
+        n, d = self.cfg.n_particles, self.basis.shape[1]
         dirs = np.zeros((n, d), dtype=np.float64)
         dirs[0] = 0.0
         basis_count = min(n - 1, d)
@@ -62,7 +71,7 @@ class SCALEFilter:
         for k in range(1, min(n, 1 + 2 * d), 2):
             if k + 1 < n:
                 dirs[k + 1] = -dirs[k]
-        return np.clip(center[None, :] + radius * dirs, 0.0, 1.0)
+        return np.clip(center[None, :] + radius * (dirs @ self.basis.T), 0.0, 1.0)
 
     def event_probabilities(self, action, predict_event: Callable[[Array, object], float]) -> Array:
         probs = np.asarray([predict_event(z, action) for z in self.particles], dtype=np.float64)
