@@ -26,3 +26,8 @@ python3 -m unittest discover -s scale_tta/tests -v
 ```
 
 The same filter can wrap the existing T2-z/LeWM predictor by implementing the `predict_event` callback in `scale_tta/core.py`.
+
+`scale_tta/bridge.py` contains the deliberately thin integration wrapper. The
+project-specific T2-z/Wan pipeline remains external; it supplies a callback
+that renders a candidate context and returns a deterministic task-event
+probability from the predicted video.
