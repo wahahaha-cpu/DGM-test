@@ -1,0 +1,10 @@
+{
+  "mean": {
+    "success_rate": 0.7395,
+    "n": 2000
+  },
+  "scale": {
+    "success_rate": 0.746,
+    "n": 2000
+  }
+}
