@@ -24,7 +24,7 @@ Let a frozen world model produce a rollout
 \hat e_{1:H}=F_\theta(e_t,a_{t:t+H-1},z).
 \]
 
-Let \(\mathcal E(\hat e_{1:H},g)\in[0,1]\) be a fixed task-event head. It can be a frozen object-goal detector, a success classifier, or a deterministic geometric predicate in simulation. It is not trained at test time.
+Let \(\mathcal E(\hat e_{1:H},g)\in[0,1]\) be a fixed task-event head. For the first hardware experiment it should be a deterministic geometric predicate from calibrated RGB segmentation/AprilTag centroids and the target region, so no additional learned head is introduced. A frozen object-goal detector is allowed only as a secondary implementation. It is not trained at test time.
 
 ### 2.1 Deterministic latent ensemble
 
