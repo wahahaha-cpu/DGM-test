@@ -26,7 +26,7 @@ For each combination collect 15 independent episodes: 5 support-pool episodes, 5
 ## Test-time loop
 1. Initialize the fixed latent center from the existing T2-z protocol.
 2. Create 17 deterministic particles: center, antipodal coordinate probes, and fixed orthogonal/random directions.
-3. For each action chunk, roll out the frozen world model under each particle and compute the predicted binary task event (progress toward goal or success margin).
+3. For each action chunk, roll out the frozen world model under each particle and compute the predicted binary task event (progress toward goal or success margin). On hardware, define the event with calibrated workspace geometry and an AprilTag/color centroid detector; do not train a new event network.
 4. Execute the action selected by posterior expected event probability minus risk variance.
 5. Observe only the real binary event from the executed chunk; update particle weights by the KL-constrained exponential update.
 6. Never read query trajectories, query success, or query loss before adaptation ends.
