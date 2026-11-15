@@ -97,6 +97,94 @@ class SCALEFilter:
         idx = int(np.argmax(scores))
         return actions[idx], {"selected_index": idx, "candidates": details}
 
+    @staticmethod
+    def _entropy(weights: Array) -> float:
+        weights = np.asarray(weights, dtype=np.float64)
+        return -float(np.sum(weights * np.log(np.maximum(weights, 1e-300))))
+
+    def predictive_information_gain(
+        self,
+        action,
+        predict_event: Callable[[Array, object], float],
+    ) -> Tuple[float, dict]:
+        """Expected reduction in particle entropy for one binary event.
+
+        The observation is deliberately the same task event used by SCALE's
+        posterior update.  Thus the probe never introduces a second sensor or
+        a learned reward model: it asks which existing action will best split
+        the current latent hypotheses through an observable outcome.
+        """
+        p = np.clip(self.event_probabilities(action, predict_event),
+                    self.cfg.epsilon_event, 1.0 - self.cfg.epsilon_event)
+        prior_entropy = self._entropy(self.weights)
+        predictive = np.array([self.weights @ (1.0 - p), self.weights @ p])
+        expected_posterior_entropy = 0.0
+        posteriors = []
+        for y in (0, 1):
+            likelihood = p if y else (1.0 - p)
+            mass = float(self.weights @ likelihood)
+            posterior = self.weights * likelihood / max(mass, 1e-300)
+            posteriors.append(posterior)
+            expected_posterior_entropy += mass * self._entropy(posterior)
+        gain = max(0.0, prior_entropy - expected_posterior_entropy)
+        return gain, {
+            "information_gain": float(gain),
+            "prior_entropy": prior_entropy,
+            "predictive_event": {"0": float(predictive[0]), "1": float(predictive[1])},
+            "posterior_if_event_0": posteriors[0].tolist(),
+            "posterior_if_event_1": posteriors[1].tolist(),
+            "particle_event": p.tolist(),
+        }
+
+    def choose_probe_action(
+        self,
+        actions: Sequence[object],
+        predict_event: Callable[[Array, object], float],
+        predict_safe: Optional[Callable[[Array, object], float]] = None,
+        information_weight: float = 0.25,
+        min_safety: float = 0.0,
+    ) -> Tuple[object, dict]:
+        """Select a task-compatible information-gain probe.
+
+        A probe is scored by expected task progress, risk, and expected entropy
+        reduction.  If ``predict_safe`` is supplied, actions whose posterior
+        probability of being safe falls below ``min_safety`` are removed.  The
+        safety gate is part of the method, rather than a post-hoc filter.
+        """
+        scores = []
+        details = []
+        for action in actions:
+            p = self.event_probabilities(action, predict_event)
+            mean = float(self.weights @ p)
+            variance = float(self.weights @ (p - mean) ** 2)
+            info_gain, info = self.predictive_information_gain(action, predict_event)
+            safe_prob = 1.0
+            if predict_safe is not None:
+                safe = np.clip(
+                    np.asarray([predict_safe(z, action) for z in self.particles], dtype=np.float64),
+                    0.0, 1.0,
+                )
+                safe_prob = float(self.weights @ safe)
+            feasible = safe_prob >= min_safety
+            score = (mean - self.cfg.risk_aversion * variance
+                     + information_weight * info_gain) if feasible else -np.inf
+            scores.append(score)
+            details.append({
+                "action": action,
+                "mean_event": mean,
+                "variance": variance,
+                "information_gain": info_gain,
+                "safe_probability": safe_prob,
+                "feasible": feasible,
+                "score": float(score),
+                "particle_event": p.tolist(),
+                "information": info,
+            })
+        if not np.isfinite(scores).any():
+            raise ValueError("no probe action satisfies the safety threshold")
+        idx = int(np.argmax(scores))
+        return actions[idx], {"selected_index": idx, "candidates": details}
+
     def update(self, observed_event: int, action, predict_event: Callable[[Array, object], float]) -> dict:
         """Bayesian/exponentiated update from one binary task event.
 
