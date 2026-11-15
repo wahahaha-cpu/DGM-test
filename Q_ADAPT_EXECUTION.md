@@ -6,6 +6,7 @@
 - scale_tta/core.py：SCALE-AP baseline
 - scale_tta/bridge.py：冻结 T2-z/LeWM callback bridge
 - scale_tta/tests/test_scale.py：SCALE-AP 和 Q-Adapt 单元测试
+- scripts/run_qadapt_toy.py：一键运行 Q-Adapt CPU toy smoke test
 - Q_ADAPT_PROPOSAL.md：方法定义和论文主线
 
 ## 1. 安装和 CPU 检查
@@ -13,9 +14,10 @@
 ~~~bash
 python3 -m pip install -e .
 python3 -m unittest discover -s scale_tta/tests -v
+python3 scripts/run_qadapt_toy.py --episodes 1000 --seed 7
 ~~~
 
-预期通过 6 个测试。
+预期通过 6 个测试，并输出 Q-Adapt toy success rate。toy 只检查接口，不作为论文效果。
 
 ## 2. Q-Adapt 最小调用
 
