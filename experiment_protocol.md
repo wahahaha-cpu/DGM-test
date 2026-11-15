@@ -1,4 +1,8 @@
-# SCALE-AP：可直接执行的实验协议
+# SCALE-AP：可直接执行的 baseline 实验协议
+
+> 注意：当前主方法已经切换为 Q-Adapt。Q-Adapt 的代码和执行流程见
+> Q_ADAPT_PROPOSAL.md、Q_ADAPT_EXECUTION.md。本文件保留为 SCALE-AP
+> 对照实验协议。
 
 本协议验证两个相互耦合但可单独拆开的贡献：
 
