@@ -7,7 +7,7 @@ SCALE training-free and avoids copying the 5B pipeline into this repository.
 """
 from __future__ import annotations
 
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Optional, Sequence, Tuple
 import numpy as np
 
 from .core import SCALEFilter
@@ -28,7 +28,7 @@ class SCALEPlanner:
         self,
         actions: Sequence[object],
         observed_event: int,
-        predict_safe: Callable[[np.ndarray, object], float] | None = None,
+        predict_safe: Optional[Callable[[np.ndarray, object], float]] = None,
         information_weight: float = 0.25,
         min_safety: float = 0.0,
     ) -> Tuple[object, dict]:
