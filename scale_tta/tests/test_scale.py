@@ -21,5 +21,36 @@ class TestSCALE(unittest.TestCase):
         self.assertEqual(action, 1)
         self.assertEqual(info["selected_index"], 1)
 
+    def test_probe_prefers_disagreement(self):
+        cfg = SCALEConfig(latent_dim=2, n_particles=5, risk_aversion=0.0)
+        f = SCALEFilter(np.array([0.5, 0.5]), cfg, seed=1)
+
+        def event(z, action):
+            if action == "uninformative":
+                return 0.5
+            return 0.05 if z[0] < 0.5 else 0.95
+
+        gain_flat, _ = f.predictive_information_gain("uninformative", event)
+        gain_split, _ = f.predictive_information_gain("split", event)
+        self.assertLess(gain_flat, 1e-8)
+        self.assertGreater(gain_split, gain_flat)
+        action, info = f.choose_probe_action(
+            ["uninformative", "split"], event, information_weight=1.0
+        )
+        self.assertEqual(action, "split")
+        self.assertEqual(info["selected_index"], 1)
+
+    def test_probe_respects_safety_gate(self):
+        cfg = SCALEConfig(latent_dim=2, n_particles=5, risk_aversion=0.0)
+        f = SCALEFilter(np.array([0.5, 0.5]), cfg, seed=2)
+        event = lambda z, a: 0.5
+        safe = lambda z, a: 0.1 if a == "danger" else 1.0
+        action, info = f.choose_probe_action(
+            ["danger", "safe"], event, predict_safe=safe,
+            information_weight=1.0, min_safety=0.9
+        )
+        self.assertEqual(action, "safe")
+        self.assertFalse(info["candidates"][0]["feasible"])
+
 if __name__ == "__main__":
     unittest.main()
