@@ -1,6 +1,12 @@
 import unittest
 import numpy as np
-from scale_tta import SCALEConfig, SCALEFilter
+from scale_tta import (
+    QAdaptConfig,
+    QAdaptFilter,
+    SCALEConfig,
+    SCALEFilter,
+    cluster_signature_rows,
+)
 
 class TestSCALE(unittest.TestCase):
     def test_weights_normalize_and_move(self):
@@ -51,6 +57,35 @@ class TestSCALE(unittest.TestCase):
         )
         self.assertEqual(action, "safe")
         self.assertFalse(info["candidates"][0]["feasible"])
+
+    def test_signature_clustering_merges_behavioral_duplicates(self):
+        signatures = np.array([
+            [0.1, 0.2, 0.3],
+            [0.11, 0.19, 0.31],
+            [0.9, 0.8, 0.7],
+        ])
+        labels = cluster_signature_rows(signatures, threshold=0.03)
+        self.assertEqual(labels[0], labels[1])
+        self.assertNotEqual(labels[0], labels[2])
+
+    def test_qadapt_probe_and_robust_action(self):
+        latents = np.array([[0.1], [0.9], [0.5]])
+        cfg = QAdaptConfig(progress_threshold=0.3, credible_mass=0.9)
+        q = QAdaptFilter(latents, config=cfg)
+
+        def event(z, action):
+            if action == "split":
+                return 0.9 if z[0] < 0.3 else 0.1
+            if action == "safe":
+                return 0.6
+            return 0.2
+
+        action, info = q.choose_probe_action(["split", "safe"], event)
+        self.assertEqual(action, "split")
+        self.assertGreater(info["candidates"][0]["disagreement"], 0.0)
+
+        robust, _ = q.choose_robust_action(["split", "safe"], event)
+        self.assertEqual(robust, "safe")
 
 if __name__ == "__main__":
     unittest.main()
