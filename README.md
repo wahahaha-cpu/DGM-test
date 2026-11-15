@@ -1,4 +1,25 @@
-# SCALE-AP: Success-Conditioned Latent Filtering with Active Probing
+# Q-Adapt: Task-Conditioned Quotient Adaptation
+
+The current research method is Q-Adapt. SCALE-AP remains implemented as a
+baseline, not the final method.
+
+Q-Adapt does not assume that Euclidean distance in the raw T2-z latent space
+has physical meaning. It maps each frozen context latent to its task-outcome
+signature over the native action bank, merges behaviorally equivalent latents,
+and updates a posterior over quotient classes. During support, it selects an
+action that separates the remaining classes subject to progress and safety
+constraints. During exploitation, it selects the action with the best
+worst-case progress over the credible classes.
+
+~~~text
+latent context -> task-outcome signature -> quotient classes
+                -> progress-preserving refinement -> robust action
+~~~
+
+See Q_ADAPT_PROPOSAL.md for the research formulation and
+Q_ADAPT_EXECUTION.md for runnable code and T2-z/LeWM integration.
+
+## SCALE-AP baseline
 
 SCALE-AP is a training-free test-time adaptation wrapper for a frozen latent world model. It has two points: SCALE filters a small posterior over latent context hypotheses from binary task events; Active Probing selects an early action that is useful and expected to separate those hypotheses. It does not update the world model, fit a residual adapter, or use latent MSE as the deployment objective.
 
