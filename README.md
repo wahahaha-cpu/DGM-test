@@ -19,6 +19,14 @@ latent context -> task-outcome signature -> quotient classes
 See Q_ADAPT_PROPOSAL.md for the research formulation and
 Q_ADAPT_EXECUTION.md for runnable code and T2-z/LeWM integration.
 
+Quick CPU check:
+
+~~~bash
+python3 -m pip install -e .
+python3 -m unittest discover -s scale_tta/tests -v
+python3 scripts/run_qadapt_toy.py --episodes 1000 --seed 7
+~~~
+
 ## SCALE-AP baseline
 
 SCALE-AP is a training-free test-time adaptation wrapper for a frozen latent world model. It has two points: SCALE filters a small posterior over latent context hypotheses from binary task events; Active Probing selects an early action that is useful and expected to separate those hypotheses. It does not update the world model, fit a residual adapter, or use latent MSE as the deployment objective.
