@@ -24,5 +24,23 @@ class SCALEPlanner:
         update = self.filter.update(observed_event, action, self.predict_event)
         return action, {"selection": selection, "update": update}
 
+    def select_probe_and_update(
+        self,
+        actions: Sequence[object],
+        observed_event: int,
+        predict_safe: Callable[[np.ndarray, object], float] | None = None,
+        information_weight: float = 0.25,
+        min_safety: float = 0.0,
+    ) -> Tuple[object, dict]:
+        action, selection = self.filter.choose_probe_action(
+            actions,
+            self.predict_event,
+            predict_safe=predict_safe,
+            information_weight=information_weight,
+            min_safety=min_safety,
+        )
+        update = self.filter.update(observed_event, action, self.predict_event)
+        return action, {"selection": selection, "update": update}
+
     def context(self) -> np.ndarray:
         return self.filter.posterior_mean.copy()
