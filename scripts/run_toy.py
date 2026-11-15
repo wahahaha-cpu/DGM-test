@@ -44,7 +44,6 @@ def main():
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", default="runs/toy_results.json")
     args = ap.parse_args()
-    master = np.random.default_rng(args.seed)
     results = {}
     for method in ("mean", "scale", "scale_ap"):
         vals = []
